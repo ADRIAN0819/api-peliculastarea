@@ -6,21 +6,24 @@ import traceback
 
 def lambda_handler(event, context):
     try:
-        # Log de entrada
+        # Si viene como string, parseamos el JSON
+        body = json.loads(event['body']) if isinstance(event.get('body'), str) else event.get('body', {})
+
+        # Log de entrada (INFO)
         print(json.dumps({
             "tipo": "INFO",
             "log_datos": {
                 "mensaje": "Evento recibido",
-                "event": event
+                "body": body
             }
         }))
 
-        # Parseo de datos de entrada
-        tenant_id = event['body']['tenant_id']
-        pelicula_datos = event['body']['pelicula_datos']
+        # Extracción de datos
+        tenant_id = body['tenant_id']
+        pelicula_datos = body['pelicula_datos']
         nombre_tabla = os.environ["TABLE_NAME"]
 
-        # Preparación del ítem a insertar
+        # Preparación del ítem DynamoDB
         uuidv4 = str(uuid.uuid4())
         pelicula = {
             'tenant_id': tenant_id,
@@ -33,7 +36,7 @@ def lambda_handler(event, context):
         table = dynamodb.Table(nombre_tabla)
         response = table.put_item(Item=pelicula)
 
-        # Log de éxito
+        # Log de éxito (INFO)
         print(json.dumps({
             "tipo": "INFO",
             "log_datos": {
@@ -51,7 +54,7 @@ def lambda_handler(event, context):
         }
 
     except Exception as e:
-        # Captura y log del error
+        # Captura y log de error (ERROR)
         error_trace = traceback.format_exc()
         print(json.dumps({
             "tipo": "ERROR",
